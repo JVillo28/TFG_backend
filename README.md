@@ -1,4 +1,4 @@
-# BioSim — Backend
+# TFG — Backend
 
 API REST en FastAPI que da soporte al Trabajo de Fin de Grado **"Simulación microbiótica para el ahorro de costes en la investigación"** (Escola Superior de Enxeñaría Informática, Universidade de Vigo).
 
