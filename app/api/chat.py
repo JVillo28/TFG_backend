@@ -75,8 +75,7 @@ def chat_message(body: ChatRequest, db: Session = Depends(get_db)):
         else default_form_state
     )
     form_state_text = (
-        "Estado actual de los campos de la sección:\n"
-        f"{json.dumps(section_form_state, indent=2, ensure_ascii=False)}"
+        f"Estado actual de los campos de la sección:\n{json.dumps(section_form_state, indent=2, ensure_ascii=False)}"
     )
 
     # Turno de auto-inicialización: message == "" → instrucción explícita
@@ -121,18 +120,15 @@ def chat_message(body: ChatRequest, db: Session = Depends(get_db)):
             status_code=500,
             detail={
                 "error": "LLM returned invalid response",
-                "details": (
-                    "El modelo generó una respuesta malformada. "
-                    "Vuelve a enviar tu mensaje."
-                ),
+                "details": ("El modelo generó una respuesta malformada. Vuelve a enviar tu mensaje."),
             },
-        )
+        ) from exc
 
     # 6. Parsear respuesta
     raw = completion.choices[0].message.content
     try:
         parsed = json.loads(raw)
-    except (json.JSONDecodeError, TypeError):
+    except (json.JSONDecodeError, TypeError) as exc:
         logger.error("LLM returned unparseable response: %s", raw)
         raise HTTPException(
             status_code=500,
@@ -140,7 +136,7 @@ def chat_message(body: ChatRequest, db: Session = Depends(get_db)):
                 "error": "LLM returned invalid response",
                 "details": "The model response could not be parsed. Try again.",
             },
-        )
+        ) from exc
 
     state = parsed.get("state", "asking")
     response_next_section = next_section_value if state == "ready_to_apply" else None

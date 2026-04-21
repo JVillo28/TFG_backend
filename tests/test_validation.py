@@ -289,9 +289,7 @@ class TestResearchServiceValidation:
     # ── Datos válidos ─────────────────────────────────────────
 
     def test_valid_research_data(self):
-        valid, err = ResearchService.validate_research(
-            VALID_RESEARCH_DATA, VALID_SCHEMA
-        )
+        valid, err = ResearchService.validate_research(VALID_RESEARCH_DATA, VALID_SCHEMA)
         assert valid is True
         assert err is None
 

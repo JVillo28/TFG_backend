@@ -122,7 +122,7 @@ def get_next_section(schema: dict, current: str) -> str | None:
         return None
     idx = order.index(current)
     properties = schema.get("properties", {})
-    for candidate in order[idx + 1:]:
+    for candidate in order[idx + 1 :]:
         candidate_schema = properties.get(candidate, {})
         if _is_section_non_empty(candidate_schema):
             return candidate
@@ -132,6 +132,7 @@ def get_next_section(schema: dict, current: str) -> str | None:
 # ──────────────────────────────────────────────────────────────────────────
 # System prompt por sección
 # ──────────────────────────────────────────────────────────────────────────
+
 
 def build_system_prompt(
     schema: dict,
@@ -158,9 +159,7 @@ def build_system_prompt(
     properties = schema.get("properties", {}) if isinstance(schema, dict) else {}
     section_schema = properties.get(current_section, {}) if isinstance(properties, dict) else {}
     section_title = (
-        section_schema.get("title", current_section)
-        if isinstance(section_schema, dict)
-        else current_section
+        section_schema.get("title", current_section) if isinstance(section_schema, dict) else current_section
     )
     section_json = json.dumps(section_schema, indent=2, ensure_ascii=False)
 
@@ -174,9 +173,7 @@ def build_system_prompt(
 
     # Formato vacío de proposed_values según tipo (para los ejemplos de skip)
     empty_payload_example = (
-        f'{{"{current_section}": []}}'
-        if section_type == "array"
-        else f'{{"{current_section}": {{}}}}'
+        f'{{"{current_section}": []}}' if section_type == "array" else f'{{"{current_section}": {{}}}}'
     )
 
     # Bloque común a ambas ramas: saltar la sección si el usuario lo pide.
@@ -209,10 +206,7 @@ IMPORTANTE: solo interpreta como skip aquellas frases que claramente se refieren
             )
         else:
             example = f'{{"{current_section}": ["valor1", "valor2", "valor3"]}}'
-            items_clause = (
-                f"Cada elemento del array es un valor primitivo de tipo "
-                f"`{items_type or 'string'}`."
-            )
+            items_clause = f"Cada elemento del array es un valor primitivo de tipo `{items_type or 'string'}`."
 
         type_specific = f"""## Instrucciones específicas para esta sección (tipo array)
 
@@ -232,8 +226,8 @@ Esta sección es una **colección** (array). {items_clause}
 7. Al cerrar la sección, anuncia textualmente la transición a la siguiente (o el cierre final si no hay siguiente).
 8. Siempre responde en español, independientemente del idioma de los nombres de campos."""
         response_format_line = (
-            f"proposed_values: (solo cuando state=\"ready_to_apply\") objeto con la "
-            f"forma `{{\"{current_section}\": [ ...items... ]}}`"
+            f'proposed_values: (solo cuando state="ready_to_apply") objeto con la '
+            f'forma `{{"{current_section}": [ ...items... ]}}`'
         )
     else:  # object (default)
         type_specific = f"""## Instrucciones específicas para esta sección (tipo object)
@@ -253,8 +247,8 @@ Esta sección es una **colección** (array). {items_clause}
 8. Al cerrar la sección, anuncia textualmente al usuario la transición a la siguiente (o el cierre final si no hay siguiente).
 9. Siempre responde en español, independientemente del idioma de los nombres de campos."""
         response_format_line = (
-            f"proposed_values: (solo cuando state=\"ready_to_apply\") objeto con la "
-            f"forma `{{\"{current_section}\": {{...campos...}}}}`"
+            f'proposed_values: (solo cuando state="ready_to_apply") objeto con la '
+            f'forma `{{"{current_section}": {{...campos...}}}}`'
         )
 
     return f"""Eres un asistente de configuración para simulaciones biológicas que guía al investigador sección por sección.

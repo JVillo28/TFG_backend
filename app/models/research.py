@@ -12,9 +12,7 @@ class Research(Base):
     __tablename__ = "research"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(
-        String(100), nullable=False, default="NEW RESEARCH"
-    )
+    name: Mapped[str] = mapped_column(String(100), nullable=False, default="NEW RESEARCH")
     research_json: Mapped[dict] = mapped_column(JSON, nullable=False)
     user_id: Mapped[int] = mapped_column(
         Integer,
@@ -25,12 +23,8 @@ class Research(Base):
         Enum("draft", "running", "finished", name="research_status"),
         default="draft",
     )
-    created_at: Mapped[datetime | None] = mapped_column(
-        DateTime, default=datetime.utcnow
-    )
-    updated_at: Mapped[datetime | None] = mapped_column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
-    )
+    created_at: Mapped[datetime | None] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     user = relationship("Users", back_populates="researches")
 

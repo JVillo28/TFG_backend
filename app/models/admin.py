@@ -13,9 +13,5 @@ class Admin(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     json_schema: Mapped[dict] = mapped_column(JSON, nullable=False)
-    created_at: Mapped[datetime | None] = mapped_column(
-        DateTime, default=datetime.utcnow
-    )
-    updated_at: Mapped[datetime | None] = mapped_column(
-        DateTime, onupdate=datetime.utcnow
-    )
+    created_at: Mapped[datetime | None] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime, onupdate=datetime.utcnow)

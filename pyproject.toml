@@ -26,7 +26,7 @@ dev = [
 
 [tool.ruff]
 target-version = "py312"
-line-length = 88
+line-length = 120
 
 [tool.ruff.lint]
 select = [
@@ -42,6 +42,11 @@ select = [
 ignore = [
     "B008",  # Depends() en defaults — patrón estándar de FastAPI
 ]
+
+[tool.ruff.lint.per-file-ignores]
+# El system prompt en español contiene frases largas que pierden claridad
+# al partirse; permitimos líneas largas solo en el módulo que lo construye.
+"app/services/llm.py" = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]

@@ -104,9 +104,7 @@ def get_researches_by_user(user_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/research/{research_id}")
-def update_research(
-    research_id: int, body: ResearchUpdate, db: Session = Depends(get_db)
-):
+def update_research(research_id: int, body: ResearchUpdate, db: Session = Depends(get_db)):
     """PUT /api/research/<id> — actualiza una research existente"""
     research = db.get(Research, research_id)
     if not research:

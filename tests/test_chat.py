@@ -176,15 +176,10 @@ class TestChatEndpoint:
         assert "Invalid section" in resp.json()["detail"]["error"]
 
     @patch("app.api.chat.get_llm_client")
-    def test_valid_turn_returns_response_with_next_section(
-        self, mock_client, client, seed
-    ):
+    def test_valid_turn_returns_response_with_next_section(self, mock_client, client, seed):
         # El LLM responde ready_to_apply para la sección "cells"
-        mock_client.return_value.chat.completions.create.return_value = (
-            _mock_llm_response(
-                '{"message":"todo listo","state":"ready_to_apply",'
-                '"proposed_values":{"cells":{"count":100,"type":"tumor"}}}'
-            )
+        mock_client.return_value.chat.completions.create.return_value = _mock_llm_response(
+            '{"message":"todo listo","state":"ready_to_apply","proposed_values":{"cells":{"count":100,"type":"tumor"}}}'
         )
 
         resp = client.post(
@@ -203,11 +198,8 @@ class TestChatEndpoint:
 
     @patch("app.api.chat.get_llm_client")
     def test_last_section_has_null_next_section(self, mock_client, client, seed):
-        mock_client.return_value.chat.completions.create.return_value = (
-            _mock_llm_response(
-                '{"message":"fin","state":"ready_to_apply",'
-                '"proposed_values":{"transporters":{"name":"t1"}}}'
-            )
+        mock_client.return_value.chat.completions.create.return_value = _mock_llm_response(
+            '{"message":"fin","state":"ready_to_apply","proposed_values":{"transporters":{"name":"t1"}}}'
         )
 
         resp = client.post(
@@ -223,11 +215,9 @@ class TestChatEndpoint:
         assert resp.json()["next_section"] is None
 
     @patch("app.api.chat.get_llm_client")
-    def test_asking_state_does_not_include_next_section(
-        self, mock_client, client, seed
-    ):
-        mock_client.return_value.chat.completions.create.return_value = (
-            _mock_llm_response('{"message":"¿cuántas?","state":"asking"}')
+    def test_asking_state_does_not_include_next_section(self, mock_client, client, seed):
+        mock_client.return_value.chat.completions.create.return_value = _mock_llm_response(
+            '{"message":"¿cuántas?","state":"asking"}'
         )
 
         resp = client.post(
@@ -247,9 +237,7 @@ class TestChatEndpoint:
     def test_empty_message_is_init_turn(self, mock_client, client, seed):
         """Un mensaje vacío debe provocar que el prompt incluya la instrucción de apertura."""
         create_mock = mock_client.return_value.chat.completions.create
-        create_mock.return_value = _mock_llm_response(
-            '{"message":"¡Hola! Vamos con Cells...","state":"asking"}'
-        )
+        create_mock.return_value = _mock_llm_response('{"message":"¡Hola! Vamos con Cells...","state":"asking"}')
 
         resp = client.post(
             "/api/chat/message",
@@ -393,13 +381,11 @@ class TestArraySections:
         db.add_all([admin, user])
         db.commit()
 
-        mock_client.return_value.chat.completions.create.return_value = (
-            _mock_llm_response(
-                '{"message":"ok","state":"ready_to_apply",'
-                '"proposed_values":{"cells":['
-                '{"name":"tumor","count":100},'
-                '{"name":"healthy","count":50}]}}'
-            )
+        mock_client.return_value.chat.completions.create.return_value = _mock_llm_response(
+            '{"message":"ok","state":"ready_to_apply",'
+            '"proposed_values":{"cells":['
+            '{"name":"tumor","count":100},'
+            '{"name":"healthy","count":50}]}}'
         )
 
         resp = client.post(
@@ -418,9 +404,7 @@ class TestArraySections:
         assert len(body["proposed_values"]["cells"]) == 2
 
     @patch("app.api.chat.get_llm_client")
-    def test_endpoint_normalizes_non_list_for_array_section(
-        self, mock_client, client, db
-    ):
+    def test_endpoint_normalizes_non_list_for_array_section(self, mock_client, client, db):
         """Cuando el LLM devuelve un objeto donde esperábamos una lista
         (escenario típico de skip mal formado), el backend normaliza a []
         en lugar de rechazar con 500."""
@@ -429,11 +413,8 @@ class TestArraySections:
         db.add_all([admin, user])
         db.commit()
 
-        mock_client.return_value.chat.completions.create.return_value = (
-            _mock_llm_response(
-                '{"message":"ok","state":"ready_to_apply",'
-                '"proposed_values":{"cells":{"name":"tumor","count":100}}}'
-            )
+        mock_client.return_value.chat.completions.create.return_value = _mock_llm_response(
+            '{"message":"ok","state":"ready_to_apply","proposed_values":{"cells":{"name":"tumor","count":100}}}'
         )
 
         resp = client.post(
@@ -449,9 +430,7 @@ class TestArraySections:
         assert resp.json()["proposed_values"]["cells"] == []
 
     @patch("app.api.chat.get_llm_client")
-    def test_endpoint_normalizes_missing_section_key_for_skip(
-        self, mock_client, client, db
-    ):
+    def test_endpoint_normalizes_missing_section_key_for_skip(self, mock_client, client, db):
         """Escenario típico de skip: LLM devuelve ready_to_apply con
         proposed_values = null o sin la clave. El backend normaliza a []
         para que el flujo de aplicación continúe."""
@@ -460,11 +439,8 @@ class TestArraySections:
         db.add_all([admin, user])
         db.commit()
 
-        mock_client.return_value.chat.completions.create.return_value = (
-            _mock_llm_response(
-                '{"message":"Ok, saltando","state":"ready_to_apply",'
-                '"proposed_values":null}'
-            )
+        mock_client.return_value.chat.completions.create.return_value = _mock_llm_response(
+            '{"message":"Ok, saltando","state":"ready_to_apply","proposed_values":null}'
         )
 
         resp = client.post(
@@ -482,9 +458,7 @@ class TestArraySections:
         assert body["proposed_values"]["cells"] == []
 
     @patch("app.api.chat.get_llm_client")
-    def test_endpoint_uses_empty_list_for_array_form_state(
-        self, mock_client, client, db
-    ):
+    def test_endpoint_uses_empty_list_for_array_form_state(self, mock_client, client, db):
         """El prompt debe recibir [] como estado actual de un array vacío."""
         admin = Admin(id=1, json_schema=MIXED_SCHEMA)
         user = Users(name="Jaime", email="j@test.com", password_hash="pwd")
@@ -492,9 +466,7 @@ class TestArraySections:
         db.commit()
 
         create_mock = mock_client.return_value.chat.completions.create
-        create_mock.return_value = _mock_llm_response(
-            '{"message":"¿cuántas?","state":"asking"}'
-        )
+        create_mock.return_value = _mock_llm_response('{"message":"¿cuántas?","state":"asking"}')
 
         client.post(
             "/api/chat/message",
