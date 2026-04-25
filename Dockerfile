@@ -1,6 +1,4 @@
-# =============================================================================
-# Stage 1 — builder: instala dependencias con uv en un .venv aislado
-# =============================================================================
+
 FROM python:3.12-slim AS builder
 
 # uv viene como binario estático desde su imagen oficial
@@ -8,18 +6,11 @@ COPY --from=ghcr.io/astral-sh/uv:0.6 /uv /usr/local/bin/uv
 
 WORKDIR /app
 
-# Copiamos solo los manifiestos para aprovechar la caché de Docker:
-# si no cambian, no se reinstalan las dependencias.
 COPY pyproject.toml uv.lock ./
 
-# `--frozen --no-dev` instala exactamente lo que dice el lockfile, sin tooling
-# de desarrollo (ruff, pytest, pre-commit).
 RUN uv sync --frozen --no-dev
 
 
-# =============================================================================
-# Stage 2 — runtime: imagen mínima con el venv pre-construido y el código
-# =============================================================================
 FROM python:3.12-slim
 
 WORKDIR /app
