@@ -104,7 +104,7 @@ def client(app, db):
 @pytest.fixture
 def seed(db):
     admin = Admin(id=1, json_schema=MULTI_SECTION_SCHEMA)
-    user = Users(name="Jaime", email="jaime@test.com", password_hash="pwd")
+    user = Users(name="Jaime", email="jaime@test.com")
     db.add_all([admin, user])
     db.commit()
     return {"admin": admin, "user": user}
@@ -377,7 +377,7 @@ class TestArraySections:
     def test_endpoint_accepts_array_section(self, mock_client, client, db):
         # Seed con schema mixto
         admin = Admin(id=1, json_schema=MIXED_SCHEMA)
-        user = Users(name="Jaime", email="j@test.com", password_hash="pwd")
+        user = Users(name="Jaime", email="j@test.com")
         db.add_all([admin, user])
         db.commit()
 
@@ -409,7 +409,7 @@ class TestArraySections:
         (escenario típico de skip mal formado), el backend normaliza a []
         en lugar de rechazar con 500."""
         admin = Admin(id=1, json_schema=MIXED_SCHEMA)
-        user = Users(name="Jaime", email="j@test.com", password_hash="pwd")
+        user = Users(name="Jaime", email="j@test.com")
         db.add_all([admin, user])
         db.commit()
 
@@ -435,7 +435,7 @@ class TestArraySections:
         proposed_values = null o sin la clave. El backend normaliza a []
         para que el flujo de aplicación continúe."""
         admin = Admin(id=1, json_schema=MIXED_SCHEMA)
-        user = Users(name="Jaime", email="j@test.com", password_hash="pwd")
+        user = Users(name="Jaime", email="j@test.com")
         db.add_all([admin, user])
         db.commit()
 
@@ -461,7 +461,7 @@ class TestArraySections:
     def test_endpoint_uses_empty_list_for_array_form_state(self, mock_client, client, db):
         """El prompt debe recibir [] como estado actual de un array vacío."""
         admin = Admin(id=1, json_schema=MIXED_SCHEMA)
-        user = Users(name="Jaime", email="j@test.com", password_hash="pwd")
+        user = Users(name="Jaime", email="j@test.com")
         db.add_all([admin, user])
         db.commit()
 

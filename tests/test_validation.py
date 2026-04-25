@@ -106,7 +106,7 @@ def client(app, db):
 def seed_data(db):
     """Inserta el schema de admin y un usuario."""
     admin = Admin(id=1, json_schema=VALID_SCHEMA)
-    user = Users(name="Jaime", email="jaime@test.com", password_hash="password")
+    user = Users(name="Jaime", email="jaime@test.com")
     db.add_all([admin, user])
     db.commit()
     return {"admin": admin, "user": user}
