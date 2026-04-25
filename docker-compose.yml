@@ -1,0 +1,92 @@
+# =============================================================================
+# BioSim — orquestación local con Docker Compose
+# =============================================================================
+# Servicios:
+#   - mysql      → BD MySQL 8 con init.sql precargado (3 tablas + usuario demo
+#                  + JSON Schema vigente)
+#   - backend    → API FastAPI en :8000
+#   - frontend   → SPA Angular servida por Nginx en :4200, proxy de /api → backend
+#   - ollama     → runtime LLM local (solo con --profile offline)
+#
+# Uso:
+#   docker compose up --build                       # arranque normal con Groq
+#   docker compose --profile offline up --build     # incluye Ollama
+#
+# Requiere:
+#   - El repo del frontend clonado como hermano de este (../TFG_frontend)
+#   - Un .env con LLM_API_KEY (ver .env.docker.example)
+# =============================================================================
+
+services:
+
+  # ───────────────────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: biosim-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE:      ${MYSQL_DATABASE}
+      MYSQL_USER:          ${MYSQL_USER}
+      MYSQL_PASSWORD:      ${MYSQL_PASSWORD}
+    # Por defecto NO exponemos 3306 al host: el backend accede por la red
+    # interna de Docker. Para inspeccionar la BD desde fuera, descomenta:
+    # ports:
+    #   - "3307:3306"   # 3307 para no chocar con un MySQL local
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  # ───────────────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: biosim-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
+      SECRET_KEY:      ${SECRET_KEY}
+      ALLOWED_ORIGINS: http://localhost:4200,http://localhost
+      LLM_BASE_URL:    ${LLM_BASE_URL:-https://api.groq.com/openai/v1}
+      LLM_MODEL:       ${LLM_MODEL:-llama-3.1-8b-instant}
+      LLM_API_KEY:     ${LLM_API_KEY}
+    ports:
+      - "8000:8000"
+
+  # ───────────────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ../TFG_frontend
+      dockerfile: Dockerfile
+    container_name: biosim-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "4200:80"
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Solo se arranca con `docker compose --profile offline up`
+  ollama:
+    image: ollama/ollama:latest
+    container_name: biosim-ollama
+    restart: unless-stopped
+    profiles: ["offline"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+volumes:
+  mysql_data:
+  ollama_data:

@@ -4,18 +4,72 @@ API REST en FastAPI que da soporte al Trabajo de Fin de Grado **"Simulación mic
 
 El backend gestiona el JSON Schema que define la estructura de las configuraciones de simulación, las investigaciones (*research*) creadas por los investigadores, y el endpoint conversacional que delega en un proveedor LLM (Groq Cloud por defecto, Ollama en modo offline).
 
-**Frontend asociado:** [../frontend/](../frontend) — Angular 21 + Angular Material + TypeScript.
+**Frontend asociado:** [TFG_frontend](https://github.com/JVillo28/TFG_frontend) — Angular 21 + Angular Material + TypeScript.
 
 ---
 
-## 1 · Requisitos
+## 1 · Despliegue rápido con Docker  · *recomendado*
+
+La forma más sencilla de probar el sistema completo: un único `docker compose up` levanta backend + frontend + MySQL con la base de datos ya inicializada.
+
+### 1.1 Requisitos
+
+- [Docker](https://docs.docker.com/get-docker/) 24+ y **Docker Compose v2** (incluido en Docker Desktop).
+- Una clave API de [Groq Cloud](https://console.groq.com/keys) — gratuita, sin tarjeta.
+
+### 1.2 Pasos
+
+```bash
+# Clonar ambos repositorios LADO A LADO en una misma carpeta
+git clone https://github.com/JVillo28/TFG_backend.git
+git clone https://github.com/JVillo28/TFG_frontend.git
+
+# Configurar variables (rellena al menos LLM_API_KEY)
+cd TFG_backend
+cp .env.docker.example .env.docker
+$EDITOR .env.docker
+
+# Arrancar
+docker compose --env-file .env.docker up --build
+```
+
+Cuando el log muestre que los tres servicios están listos, abre [http://localhost:4200](http://localhost:4200). La base de datos arranca con el JSON Schema de simulación biológica precargado, listo para crear investigaciones.
+
+### 1.3 Modo offline (Ollama local)
+
+Por defecto se usa Groq Cloud por velocidad y sencillez. Para ejecutar el LLM localmente:
+
+```bash
+# 1. Edita .env.docker — comenta el bloque Groq y descomenta el de Ollama
+# 2. Arranca con el profile offline:
+docker compose --env-file .env.docker --profile offline up --build
+
+# 3. La primera vez, descarga el modelo (~5 GB):
+docker exec biosim-ollama ollama pull qwen2.5:7b-instruct
+```
+
+### 1.4 Comandos útiles
+
+| Comando | Para qué |
+|---|---|
+| `docker compose --env-file .env.docker logs -f backend` | Ver logs del backend en tiempo real |
+| `docker compose --env-file .env.docker exec mysql mysql -uroot -p` | Abrir un shell de MySQL dentro del contenedor |
+| `docker compose --env-file .env.docker down` | Parar los servicios (mantiene los datos) |
+| `docker compose --env-file .env.docker down -v` | Parar y borrar todos los datos para empezar limpio |
+
+---
+
+## 2 · Instalación manual (alternativa para desarrollo)
+
+Si prefieres trabajar sin Docker —por ejemplo para depurar con tu IDE—, este es el flujo tradicional.
+
+### 2.1 Requisitos
 
 | Componente | Versión mínima |
 |---|---|
 | Python | 3.11 (recomendado 3.12) |
 | MySQL | 8.0 |
 | [uv](https://docs.astral.sh/uv/) | última estable |
-| Clave de [Groq Cloud](https://console.groq.com/keys) *o* instalación local de [Ollama](https://ollama.com/) | — |
 
 `uv` se instala con:
 
@@ -24,57 +78,52 @@ curl -LsSf https://astral.sh/uv/install.sh | sh   # Linux / macOS
 # Windows: powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
----
+### 2.2 Base de datos
 
-## 2 · Instalación
+Carga la base de datos a partir del script versionado, que crea las tres tablas y precarga el JSON Schema:
 
-### 2.1 Base de datos
+```bash
+mysql -u root -p < db/init.sql
+```
 
-Crea una base de datos MySQL vacía y un usuario con permisos sobre ella:
+Si prefieres un usuario dedicado (recomendado para uso prolongado):
 
 ```sql
-CREATE DATABASE biosim CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER 'biosim'@'localhost' IDENTIFIED BY 'contraseña_segura';
 GRANT ALL PRIVILEGES ON biosim.* TO 'biosim'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-### 2.2 Dependencias y variables de entorno
-
-Desde la raíz del repositorio:
+### 2.3 Dependencias y variables de entorno
 
 ```bash
-uv sync                          # crea .venv/ e instala dependencias
-cp .env.example .env             # rellenar con credenciales reales
+uv sync                    # crea .venv/ e instala dependencias
+cp .env.example .env       # editar con credenciales reales
 ```
 
-Edita `.env` con los valores que correspondan a tu entorno — al mínimo, `DATABASE_URL` y `LLM_API_KEY` (si usas Groq).
+En `.env` ajusta como mínimo `DATABASE_URL` y `LLM_API_KEY`.
 
-### 2.3 LLM local (opcional)
-
-Si prefieres ejecutar el modelo en local sin depender de servicios externos:
-
-```bash
-curl -fsSL https://ollama.com/install.sh | sh
-ollama pull qwen2.5:7b-instruct
-ollama serve                      # arranca el runtime en :11434
-```
-
-Después, descomenta el bloque **Opción B** en `.env` y comenta el bloque **Opción A**.
-
----
-
-## 3 · Ejecución
-
-Arranca el servidor de desarrollo con *hot-reload*:
+### 2.4 Ejecución
 
 ```bash
 uv run uvicorn main:app --reload --port 8000
 ```
 
-En el primer arranque, la aplicación crea automáticamente las tablas necesarias (`users`, `admin`, `research`) a partir de los modelos SQLAlchemy. No hay que ejecutar migraciones manualmente.
+El backend queda escuchando en `http://localhost:8000`.
 
-Puntos de entrada:
+### 2.5 LLM local (opcional)
+
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
+ollama pull qwen2.5:7b-instruct
+ollama serve              # arranca el runtime en :11434
+```
+
+Después, edita `.env` para apuntar `LLM_BASE_URL` a `http://localhost:11434/v1`.
+
+---
+
+## 3 · Puntos de entrada
 
 - **API:** [http://localhost:8000](http://localhost:8000)
 - **Health check:** [GET /api/health](http://localhost:8000/api/health)
@@ -110,11 +159,14 @@ backend/
 │   ├── services/         # Lógica de negocio y cliente LLM
 │   ├── database.py       # Engine, SessionLocal, init_db
 │   └── __init__.py       # create_app() — factory FastAPI
+├── db/
+│   └── init.sql          # Esquema relacional + JSON Schema precargado
 ├── tests/                # pytest + SQLite en memoria
 ├── config.py             # Settings (Pydantic Settings)
 ├── main.py               # Entrypoint: app = create_app()
 ├── pyproject.toml        # Dependencias y metadatos
-└── uv.lock               # Lockfile reproducible
+├── Dockerfile            # Imagen de producción del backend
+└── docker-compose.yml    # Orquestación local (mysql + backend + frontend)
 ```
 
 Patrón de capas: **Route → Schema (validación) → Service (lógica) → Model (DB)**.
@@ -131,7 +183,7 @@ uv run pytest -v                   # verbose
 uv run pytest tests/test_chat.py   # archivo concreto
 ```
 
-Cobertura actual: **68 tests** (unitarios + integración) en estado *passing*, incluyendo el endpoint conversacional con cliente LLM mockeado.
+Cobertura actual: **79 tests** (unitarios + integración) en estado *passing*, incluyendo el endpoint conversacional con cliente LLM mockeado.
 
 ---
 
@@ -142,6 +194,8 @@ uv run ruff check .                # lint
 uv run ruff check --fix .          # lint con autofix
 uv run ruff format .               # formateo
 ```
+
+El lint también se ejecuta en cada *push* mediante GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
 
 ---
 

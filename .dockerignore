@@ -1,0 +1,28 @@
+# Entornos virtuales y cachés de Python
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+
+# Tests y documentación: no se ejecutan en producción
+tests
+docs
+README.md
+
+# Configuración local
+.env
+.env.docker
+.env.example
+.python-version
+
+# Tooling de desarrollo
+.git
+.gitignore
+.github
+.pre-commit-config.yaml
+
+# Artefactos de Docker mismos
+Dockerfile
+.dockerignore
+docker-compose.yml
